@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Physics Generator: Horizontal Projectiles</title>
+
+  <!-- KaTeX for physics typography -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+  <!-- html2canvas for 1-click clipboard PNG export -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <style>
+    body, button, select, textarea, input {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      color: #000;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #f3f4f6;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Top Toolbar */
+    .toolbar {
+      background: #fff;
+      border: 1.5px solid #000;
+      border-radius: 6px;
+      padding: 10px 18px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    select, button {
+      padding: 8px 14px;
+      font-size: 13.5px;
+      font-weight: 600;
+      border: 1.5px solid #000;
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #000;
+      color: #fff;
+    }
+
+    .btn-action {
+      background: #eef2ff;
+      border-color: #3730a3;
+      color: #3730a3;
+    }
+    .btn-action:hover {
+      background: #3730a3;
+      color: #fff;
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: fixed;
+      bottom: 20px;
+      background: #111827;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* Output Containers */
+    .card-container {
+      width: 100%;
+      max-width: 820px;
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #555;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .live-status {
+      font-size: 11px;
+      color: #2563eb;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
+    /* 1. Plain Text Question Container */
+    .question-box {
+      background: #fff;
+      border: 1.5px solid #000;
+      padding: 18px 20px;
+      border-radius: 4px;
+    }
+
+    textarea.problem-textarea {
+      width: 100%;
+      height: 72px;
+      font-size: 15px;
+      line-height: 1.5;
+      border: 1.5px solid #bbb;
+      padding: 10px;
+      border-radius: 3px;
+      resize: vertical;
+      margin-bottom: 10px;
+    }
+    textarea.problem-textarea:focus {
+      outline: none;
+      border-color: #000;
+    }
+
+    /* 2. Solution Key Container (PNG Target) */
+    .solution-card {
+      background: #fff;
+      border: 1.5px solid #000;
+      padding: 24px 28px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+
+    /* Header with no-wrap badge layout */
+    .sol-header {
+      border-bottom: 1.5px solid #000;
+      padding-bottom: 8px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .sol-header h2 {
+      font-size: 15.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    .target-badge {
+      font-size: 12px;
+      font-weight: 700;
+      color: #111;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      padding: 3px 10px;
+      border-radius: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .sol-prompt-quote {
+      font-size: 13.5px;
+      line-height: 1.45;
+      color: #333;
+      background: #fafafa;
+      border-left: 3px solid #000;
+      padding: 8px 12px;
+      margin-bottom: 16px;
+    }
+
+    /* Diagrams Layout */
+    .diagrams-row {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .diagram-panel {
+      border: 1px solid #aaa;
+      border-radius: 4px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #fff;
+    }
+
+    .panel-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+      color: #444;
+      align-self: flex-start;
+    }
+
+    /* T-Chart Table */
+    .t-chart-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 18px;
+      border: 1.5px solid #000;
+    }
+
+    .t-chart-table th {
+      border-bottom: 1.5px solid #000;
+      padding: 6px 12px;
+      font-size: 13.5px;
+      text-align: center;
+      background: #f7f7f7;
+      width: 50%;
+    }
+
+    .t-chart-table td {
+      width: 50%;
+      vertical-align: top;
+      padding: 10px 16px;
+      font-size: 14px;
+      line-height: 1.9;
+    }
+
+    .t-chart-table td:first-child {
+      border-right: 1.5px solid #000;
+    }
+
+    /* Implied Value Pills */
+    .implied-pill {
+      display: inline-block;
+      font-size: 9.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      background: #f0f0f0;
+      border: 1px dashed #666;
+      padding: 1px 6px;
+      border-radius: 3px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .target-pill {
+      background: #000;
+      color: #fff;
+      border: 1px solid #000;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 3px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    /* Step-by-Step Math Steps */
+    .step-box {
+      margin-bottom: 16px;
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+
+    .math-callout {
+      padding: 8px 14px;
+      margin: 6px 0 8px 0;
+      background: #fafafa;
+      border-left: 3px solid #000;
+      font-size: 14px;
+    }
+
+    .math-line {
+      display: block;
+    }
+
+    /* Clean blank space between calculation lines */
+    .math-gap {
+      margin-top: 10px;
+    }
+
+    .final-box {
+      margin-top: 14px;
+      padding: 9px 12px;
+      border: 1.5px solid #000;
+      background: #fff;
+      font-size: 14px;
+      font-weight: bold;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Teacher Toolbar -->
+  <div class="toolbar">
+    <label for="problemType"><strong>Type:</strong></label>
+    <select id="problemType">
+      <option value="random">Random Mix</option>
+      <option value="findHeight">Find Height (d_V)</option>
+      <option value="findRange">Find Range (d_H)</option>
+      <option value="findSpeed">Find Launch Speed (v_H)</option>
+    </select>
+    <button onclick="generateNewProblem()">🎲 Generate Problem</button>
+    <button class="btn-action" onclick="copyQuestionText()">📋 Copy Question Text</button>
+    <button class="btn-action" onclick="copySolutionCardPNG()">🖼️ Copy Solution as PNG</button>
+  </div>
+
+  <!-- 1. PLAIN TEXT QUESTION FOR STUDENT WORKSHEET / GOOGLE DOC -->
+  <div class="card-container">
+    <div class="section-title">
+      <span>Question Statement (Plain Text for Google Docs)</span>
+      <span class="live-status">⚡ Editing text or numbers updates the solution key live</span>
+    </div>
+    <div class="question-box">
+      <textarea id="question-plain-text" class="problem-textarea"></textarea>
+      <button onclick="copyQuestionText()" style="font-size: 12px; padding: 6px 12px;">📋 Copy Text to Clipboard</button>
+    </div>
+  </div>
+
+  <!-- 2. SOLUTION KEY CARD (To be copied as high-res PNG into Solutions Doc) -->
+  <div class="card-container">
+    <div class="section-title">
+      <span>Solution Key (Copy as PNG for Solutions Doc)</span>
+    </div>
+
+    <div class="solution-card" id="solution-card">
+      <div class="sol-header">
+        <h2>Horizontal Projectile Motion — Solution Key</h2>
+        <span class="target-badge" id="sol-type-badge"></span>
+      </div>
+
+      <div class="sol-prompt-quote" id="sol-prompt-display"></div>
+
+      <!-- Diagrams Row: Scaled Trajectory + Value-Only Vector Diagram -->
+      <div class="diagrams-row">
+        <div class="diagram-panel">
+          <span class="panel-label">1. Trajectory Sketch (Proportionally Scaled)</span>
+          <div id="scaled-trajectory-container"></div>
+        </div>
+        <div class="diagram-panel">
+          <span class="panel-label">2. Initial Velocity Diagram</span>
+          <div id="isolated-vector-container"></div>
+        </div>
+      </div>
+
+      <!-- T-Chart with Vector Arrows & Implied Labels -->
+      <table class="t-chart-table">
+        <thead>
+          <tr>
+            <th>Vertical Motion</th>
+            <th>Horizontal Motion</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td id="sol-tchart-v"></td>
+            <td id="sol-tchart-h"></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Calculations with Visual Separation Between Lines -->
+      <div id="sol-math-steps"></div>
+      <div class="final-box" id="sol-final-box"></div>
+    </div>
+  </div>
+
+  <div id="toast">Copied to clipboard!</div>
+
+  <script>
+    function tex(mathStr) {
+      return katex.renderToString(mathStr, { throwOnError: false });
+    }
+
+    const scenarios = [
+      { subject: "A ball is thrown horizontally from the top of a building", place: "the building" },
+      { subject: "A stunt car drives horizontally off the edge of a flat cliff during a filming stunt", place: "the cliff" },
+      { subject: "A supply crate is pushed horizontally from the flat cargo roof of a research outpost", place: "the outpost" },
+      { subject: "A skateboarder rolls horizontally off the top edge of a concrete plateau", place: "the plateau" },
+      { subject: "A steel sphere rolls horizontally off a high laboratory bench", place: "the bench" },
+      { subject: "A rescue pack is launched horizontally from an observation tower", place: "the tower" }
+    ];
+
+    let currentProb = {};
+
+    function generateNewProblem() {
+      const typeSelect = document.getElementById("problemType").value;
+      const types = ["findHeight", "findRange", "findSpeed"];
+      const chosenType = typeSelect === "random" ? types[Math.floor(Math.random() * types.length)] : typeSelect;
+
+      // Realistic values:
+      const tExact = +(2.2 + Math.random() * 2.6).toFixed(2);
+      const vH = +(14 + Math.random() * 16).toFixed(1);
+      const g = 9.81;
+
+      const dH = +(vH * tExact).toFixed(1);
+      const hMagnitude = +(0.5 * g * tExact * tExact).toFixed(1);
+
+      const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+
+      currentProb = {
+        type: chosenType,
+        vH: vH,
+        dH: dH,
+        hMagnitude: hMagnitude,
+        tExact: tExact,
+        g: g,
+        scenario: scenario
+      };
+
+      // Set initial question text
+      let qText = "";
+      if (currentProb.type === "findHeight") {
+        qText = `${currentProb.scenario.subject} with a speed of ${currentProb.vH} m/s. If it lands ${currentProb.dH} m from the base, how tall is ${currentProb.scenario.place}?`;
+      } else if (currentProb.type === "findRange") {
+        qText = `${currentProb.scenario.subject} with a speed of ${currentProb.vH} m/s. If ${currentProb.scenario.place} is ${currentProb.hMagnitude} m tall, how far from the base will it land?`;
+      } else { // findSpeed
+        qText = `${currentProb.scenario.subject}. It lands ${currentProb.dH} m from the base of ${currentProb.scenario.place}, which is ${currentProb.hMagnitude} m tall. What was its initial launch speed?`;
+      }
+
+      document.getElementById("question-plain-text").value = qText;
+      updateSolutionView();
+    }
+
+    // Updates all parts of the Solution Key
+    function updateSolutionView() {
+      const p = currentProb;
+      const qText = document.getElementById("question-plain-text").value;
+
+      // Clean KaTeX-rendered badge
+      let typeLabelHtml = "";
+      if (p.type === "findHeight") {
+        typeLabelHtml = `Target: Height (${tex("d_V")})`;
+      } else if (p.type === "findRange") {
+        typeLabelHtml = `Target: Range (${tex("d_H")})`;
+      } else {
+        typeLabelHtml = `Target: Speed (${tex("v_H")})`;
+      }
+
+      document.getElementById("sol-type-badge").innerHTML = typeLabelHtml;
+      document.getElementById("sol-prompt-display").innerHTML = `<strong>Problem:</strong> ${qText}`;
+
+      // Scaled Trajectory Diagram (Values ONLY, no vector at launch point)
+      document.getElementById("scaled-trajectory-container").innerHTML = drawScaledTrajectorySVG(p.hMagnitude, p.dH, p.type);
+
+      // Clean Initial Velocity Diagram (Magnitude ONLY)
+      document.getElementById("isolated-vector-container").innerHTML = drawInitialVelocityDiagram(p.vH, p.type);
+
+      // T-Chart with vector arrows
+      renderSolutionTChart(p);
+
+      // Calculations with clean blank space separation
+      renderMathSteps(p);
+    }
+
+    // --- LIVE RECALCULATION LISTENER ---
+    document.getElementById("question-plain-text").addEventListener("input", function() {
+      const text = this.value;
+      const p = currentProb;
+
+      // Update quote text
+      document.getElementById("sol-prompt-display").innerHTML = `<strong>Problem:</strong> ${text}`;
+
+      // Extract numbers
+      const speedMatch = text.match(/(\d+\.?\d*)\s*m\/s/i);
+      const meterMatches = [...text.matchAll(/(\d+\.?\d*)\s*m(?![a-zA-Z\/])/gi)];
+
+      let parsed = false;
+
+      if (p.type === "findHeight") {
+        if (speedMatch && meterMatches.length >= 1) {
+          const v = parseFloat(speedMatch[1]);
+          const d = parseFloat(meterMatches[0][1]);
+          if (v > 0 && d > 0) {
+            p.vH = v;
+            p.dH = d;
+            const t = d / v;
+            p.tExact = +t.toFixed(2);
+            p.hMagnitude = +(0.5 * p.g * t * t).toFixed(1);
+            parsed = true;
+          }
+        }
+      } else if (p.type === "findRange") {
+        if (speedMatch && meterMatches.length >= 1) {
+          const v = parseFloat(speedMatch[1]);
+          const h = parseFloat(meterMatches[0][1]);
+          if (v > 0 && h > 0) {
+            p.vH = v;
+            p.hMagnitude = h;
+            const t = Math.sqrt((2 * h) / p.g);
+            p.tExact = +t.toFixed(2);
+            p.dH = +(v * t).toFixed(1);
+            parsed = true;
+          }
+        }
+      } else if (p.type === "findSpeed") {
+        if (meterMatches.length >= 2) {
+          const d = parseFloat(meterMatches[0][1]);
+          const h = parseFloat(meterMatches[1][1]);
+          if (d > 0 && h > 0) {
+            p.dH = d;
+            p.hMagnitude = h;
+            const t = Math.sqrt((2 * h) / p.g);
+            p.tExact = +t.toFixed(2);
+            p.vH = +(d / t).toFixed(1);
+            parsed = true;
+          }
+        }
+      }
+
+      if (parsed) {
+        updateSolutionView();
+      }
+    });
+
+    // --- 1. PROPORTIONALLY SCALED TRAJECTORY DIAGRAM ---
+    function drawScaledTrajectorySVG(h, dH, probType) {
+      const svgW = 340, svgH = 150;
+      const groundY = 126;
+      
+      const cliffLeftX = 68;
+      const cliffWidth = 38;
+      const startX = cliffLeftX + cliffWidth;
+
+      const maxDrawW = 205; 
+      const maxDrawH = 92;
+
+      const scaleX = maxDrawW / dH;
+      const scaleY = maxDrawH / h;
+      const scale = Math.min(scaleX, scaleY);
+
+      const drawnH = Math.max(28, h * scale);
+      const drawnRange = dH * scale;
+
+      const startY = groundY - drawnH;
+      const landX = startX + drawnRange;
+
+      let svg = `<svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg">`;
+
+      // Ground line with hatch marks
+      svg += `<line x1="15" y1="${groundY}" x2="${svgW - 8}" y2="${groundY}" stroke="#000" stroke-width="1.5"/>`;
+      for (let x = 15; x <= svgW - 12; x += 11) {
+        svg += `<line x1="${x}" y1="${groundY}" x2="${x - 5}" y2="${groundY + 6}" stroke="#777" stroke-width="1"/>`;
+      }
+
+      // Cliff structure
+      svg += `<rect x="${cliffLeftX}" y="${startY}" width="${cliffWidth}" height="${drawnH}" fill="#f2f2f2" stroke="#000" stroke-width="1.4"/>`;
+
+      // Parabolic arc path
+      let pathD = `M ${startX.toFixed(1)} ${startY.toFixed(1)}`;
+      const steps = 30;
+      for (let i = 1; i <= steps; i++) {
+        const frac = i / steps;
+        const currX = startX + frac * drawnRange;
+        const currY = startY + (frac * frac) * drawnH;
+        pathD += ` L ${currX.toFixed(1)} ${currY.toFixed(1)}`;
+      }
+      svg += `<path d="${pathD}" fill="none" stroke="#000" stroke-width="1.8" stroke-dasharray="4,3"/>`;
+
+      // Launch point dot ONLY
+      svg += `<circle cx="${startX}" cy="${startY}" r="3.5" fill="#000"/>`;
+
+      // Vertical dimension: Values ONLY (ample left margin, no crop)
+      const hDimX = cliffLeftX - 10;
+      const hText = probType === 'findHeight' ? '?' : `${h} m`;
+      svg += `<line x1="${hDimX}" y1="${startY}" x2="${hDimX}" y2="${groundY}" stroke="#444" stroke-width="1"/>`;
+      svg += `<line x1="${hDimX - 3}" y1="${startY}" x2="${hDimX + 3}" y2="${startY}" stroke="#444" stroke-width="1"/>`;
+      svg += `<line x1="${hDimX - 3}" y1="${groundY}" x2="${hDimX + 3}" y2="${groundY}" stroke="#444" stroke-width="1"/>`;
+      svg += `<text x="${hDimX - 5}" y="${startY + drawnH/2 + 3.5}" font-size="10" text-anchor="end" font-weight="600">${hText}</text>`;
+
+      // Horizontal dimension: Values ONLY
+      const rDimY = groundY + 11;
+      const rText = probType === 'findRange' ? '?' : `${dH} m`;
+      svg += `<line x1="${startX}" y1="${rDimY}" x2="${landX}" y2="${rDimY}" stroke="#444" stroke-width="1"/>`;
+      svg += `<line x1="${startX}" y1="${rDimY - 3}" x2="${startX}" y2="${rDimY + 3}" stroke="#444" stroke-width="1"/>`;
+      svg += `<line x1="${landX}" y1="${rDimY - 3}" x2="${landX}" y2="${rDimY + 3}" stroke="#444" stroke-width="1"/>`;
+      svg += `<text x="${(startX + landX)/2}" y="${rDimY + 11}" font-size="10" text-anchor="middle" font-weight="600">${rText}</text>`;
+
+      svg += `</svg>`;
+      return svg;
+    }
+
+    // --- 2. INITIAL VELOCITY DIAGRAM (VALUE ONLY, NO VARIABLE NAMES OR DIRECTIONS) ---
+    function drawInitialVelocityDiagram(vH, probType) {
+      const svgW = 250, svgH = 150;
+      const originX = 55, originY = 85;
+      const vecLen = 110;
+      const labelText = probType === 'findSpeed' ? '?' : `${vH} m/s`;
+
+      let svg = `<svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg">`;
+
+      // Cartesian coordinate axes crosshairs (unlabeled)
+      svg += `<line x1="${originX - 25}" y1="${originY}" x2="${originX + 155}" y2="${originY}" stroke="#999" stroke-width="1" stroke-dasharray="3,3"/>`;
+      svg += `<line x1="${originX}" y1="${originY + 45}" x2="${originX}" y2="${originY - 55}" stroke="#999" stroke-width="1" stroke-dasharray="3,3"/>`;
+
+      // Launch particle origin
+      svg += `<circle cx="${originX}" cy="${originY}" r="4" fill="#000"/>`;
+
+      // Velocity Vector arrow
+      svg += `<line x1="${originX}" y1="${originY}" x2="${originX + vecLen}" y2="${originY}" stroke="#000" stroke-width="2.4"/>`;
+      svg += `<polygon points="${originX + vecLen},${originY - 4.5} ${originX + vecLen + 9},${originY} ${originX + vecLen},${originY + 4.5}" fill="#000"/>`;
+
+      // Numerical Value ONLY directly above vector
+      svg += `<text x="${originX + vecLen/2}" y="${originY - 9}" font-size="12" font-weight="bold" text-anchor="middle">${labelText}</text>`;
+
+      svg += `</svg>`;
+      return svg;
+    }
+
+    // --- 3. T-CHART WITH VECTOR ARROWS ---
+    function renderSolutionTChart(p) {
+      const impliedLaunch = `<span class="implied-pill">implied: horizontal launch</span>`;
+      const impliedGravity = `<span class="implied-pill">implied: gravity</span>`;
+      const targetPill = `<span class="target-pill">TARGET</span>`;
+
+      let vHtml = `
+        <div>${tex("\\vec{v}_{V1} = 0\\text{ m/s}")} ${impliedLaunch}</div>
+        <div>${tex("\\vec{v}_{V2} = \\text{?}")}</div>
+        <div>${tex("\\vec{a}_V = -9.81\\text{ m/s}^2")} ${impliedGravity}</div>
+      `;
+
+      if (p.type === "findHeight") {
+        vHtml += `<div>${tex("\\vec{d}_V = \\text{?}")} ${targetPill}</div>`;
+      } else {
+        vHtml += `<div>${tex(`\\vec{d}_V = -${p.hMagnitude}\\text{ m}`)}</div>`;
+      }
+      vHtml += `<div>${tex("t = \\text{?}")}</div>`;
+
+      let hHtml = "";
+      if (p.type === "findSpeed") {
+        hHtml += `<div>${tex("\\vec{v}_H = \\text{?}")} ${targetPill}</div>`;
+      } else {
+        hHtml += `<div>${tex(`\\vec{v}_H = ${p.vH}\\text{ m/s}`)}</div>`;
+      }
+
+      if (p.type === "findRange") {
+        hHtml += `<div>${tex("\\vec{d}_H = \\text{?}")} ${targetPill}</div>`;
+      } else {
+        hHtml += `<div>${tex(`\\vec{d}_H = ${p.dH}\\text{ m}`)}</div>`;
+      }
+      hHtml += `<div>${tex("t = \\text{?}")}</div>`;
+
+      document.getElementById("sol-tchart-v").innerHTML = vHtml;
+      document.getElementById("sol-tchart-h").innerHTML = hHtml;
+    }
+
+    // --- 4. KINEMATICS WITH VISUAL BLANK LINE SEPARATION ---
+    function renderMathSteps(p) {
+      let stepsHtml = "";
+      let finalBoxHtml = "";
+
+      if (p.type === "findHeight") {
+        const tCalc = (p.dH / p.vH).toFixed(5);
+        stepsHtml = `
+          <div class="step-box">
+            <strong>Step 1 (Horizontal):</strong> Solve for time of flight using constant velocity:
+            <div class="math-callout">
+              <span class="math-line">${tex(`t = \\frac{d}{v} = \\frac{${p.dH}\\text{ m}}{${p.vH}\\text{ m/s}} = ${tCalc}\\text{ s}`)}</span>
+            </div>
+          </div>
+          <div class="step-box">
+            <strong>Step 2 (Vertical):</strong> Solve for vertical displacement:
+            <div class="math-callout">
+              <span class="math-line">${tex(`d = v_1 t + \\frac{1}{2}at^2 = (0\\text{ m/s})(${tCalc}\\text{ s}) + \\frac{1}{2}(-9.81\\text{ m/s}^2)(${tCalc}\\text{ s})^2`)}</span>
+              <span class="math-line math-gap">${tex(`d = -${p.hMagnitude}\\text{ m}`)}</span>
+            </div>
+          </div>
+        `;
+        finalBoxHtml = `Height of ${p.scenario.place} = <strong>${p.hMagnitude} m</strong> (displacement is -${p.hMagnitude} m)`;
+
+      } else if (p.type === "findRange") {
+        const tCalc = Math.sqrt((2 * -p.hMagnitude) / -p.g).toFixed(5);
+        stepsHtml = `
+          <div class="step-box">
+            <strong>Step 1 (Vertical):</strong> Solve for time of flight using vertical displacement:
+            <div class="math-callout">
+              <span class="math-line">${tex(`d = v_1 t + \\frac{1}{2}at^2 \\implies -${p.hMagnitude}\\text{ m} = 0 + \\frac{1}{2}(-9.81\\text{ m/s}^2)t^2`)}</span>
+              <span class="math-line math-gap">${tex(`t = \\sqrt{\\frac{2(-${p.hMagnitude}\\text{ m})}{-9.81\\text{ m/s}^2}} = ${tCalc}\\text{ s}`)}</span>
+            </div>
+          </div>
+          <div class="step-box">
+            <strong>Step 2 (Horizontal):</strong> Solve for horizontal range:
+            <div class="math-callout">
+              <span class="math-line">${tex(`d = vt = (${p.vH}\\text{ m/s})(${tCalc}\\text{ s}) = ${p.dH}\\text{ m}`)}</span>
+            </div>
+          </div>
+        `;
+        finalBoxHtml = `Horizontal landing range = <strong>${p.dH} m</strong>`;
+
+      } else { // findSpeed
+        const tCalc = Math.sqrt((2 * -p.hMagnitude) / -p.g).toFixed(5);
+        stepsHtml = `
+          <div class="step-box">
+            <strong>Step 1 (Vertical):</strong> Solve for time of flight using vertical displacement:
+            <div class="math-callout">
+              <span class="math-line">${tex(`d = v_1 t + \\frac{1}{2}at^2 \\implies -${p.hMagnitude}\\text{ m} = 0 + \\frac{1}{2}(-9.81\\text{ m/s}^2)t^2`)}</span>
+              <span class="math-line math-gap">${tex(`t = \\sqrt{\\frac{2(-${p.hMagnitude}\\text{ m})}{-9.81\\text{ m/s}^2}} = ${tCalc}\\text{ s}`)}</span>
+            </div>
+          </div>
+          <div class="step-box">
+            <strong>Step 2 (Horizontal):</strong> Solve for initial horizontal launch speed:
+            <div class="math-callout">
+              <span class="math-line">${tex(`v = \\frac{d}{t} = \\frac{${p.dH}\\text{ m}}{${tCalc}\\text{ s}} = ${p.vH}\\text{ m/s}`)}</span>
+            </div>
+          </div>
+        `;
+        finalBoxHtml = `Initial horizontal launch speed = <strong>${p.vH} m/s</strong>`;
+      }
+
+      document.getElementById("sol-math-steps").innerHTML = stepsHtml;
+      document.getElementById("sol-final-box").innerHTML = finalBoxHtml;
+    }
+
+    // --- COPY UTILITIES ---
+    function copyQuestionText() {
+      const textarea = document.getElementById("question-plain-text");
+      navigator.clipboard.writeText(textarea.value).then(() => {
+        showToast("✓ Copied plain text question to clipboard!");
+      });
+    }
+
+    async function copySolutionCardPNG() {
+      const card = document.getElementById("solution-card");
+      showToast("Rendering PNG image...");
+
+      try {
+        const canvas = await html2canvas(card, {
+          scale: 2, // 2x Retina resolution for razor-sharp Google Doc printing
+          backgroundColor: "#ffffff",
+          useCORS: true
+        });
+
+        canvas.toBlob(async (blob) => {
+          try {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]);
+            showToast("✓ Copied Solution Key PNG to Clipboard! (Paste with Ctrl+V)");
+          } catch (clipErr) {
+            const link = document.createElement("a");
+            link.download = `solution_key.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            showToast("Downloaded PNG (Clipboard write denied)");
+          }
+        }, "image/png");
+      } catch (err) {
+        alert("Failed to render PNG: " + err);
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      toast.innerText = msg;
+      toast.style.opacity = "1";
+      setTimeout(() => { toast.style.opacity = "0"; }, 2500);
+    }
+
+    window.onload = generateNewProblem;
+  </script>
+</body>
+</html>
